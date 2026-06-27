@@ -1,0 +1,91 @@
+# Hardened CI security pipeline: SAST (Semgrep) + SCA (Snyk) + secrets (TruffleHog)
+#
+# Supply-chain note: third-party actions are tag-pinned here for readability.
+# Run `scripts/pin-actions.sh .github/workflows/security.yml` to convert these to
+# verified commit SHAs (production posture). Dependabot keeps both deps and pins fresh.
+
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Least-privilege default for the whole workflow. Jobs widen only what they need.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sast-semgrep:
+    name: SAST — Semgrep (pattern)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # upload SARIF to code scanning
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/default
+            p/security-audit
+            p/secrets
+          generateSarif: "1"
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  sca-snyk:
+    name: SCA — Snyk (dependencies)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Snyk (report-only — see gating policy)
+        uses: snyk/actions/python@master
+        continue-on-error: true   # known-deferred deps report, not block
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --sarif-file-output=snyk.sarif --severity-threshold=high
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk.sarif
+          category: snyk
+
+  secrets-trufflehog:
+    name: Secrets — TruffleHog (full history, verified)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full git history, not just current files
+      - name: Scan git history for verified secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified   # live-credential verification, cut false positives
+
+  gate:
+    name: Gate — block on new-code SAST findings
+    needs: [sast-semgrep, secrets-trufflehog]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce gate
+        run: |
+          echo "SAST and secrets stages must pass to merge."
+          echo "SCA runs report-only for known-deferred dependencies (see docs/gating-policy.md)."

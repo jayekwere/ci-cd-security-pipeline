@@ -1,0 +1,43 @@
+# CodeQL — semantic (data-flow / taint) SAST.
+# Catches cross-function source-to-sink flows that pattern matching misses
+# (worked example: docs/findings/cwe-78-command-injection.md).
+
+name: codeql
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"   # weekly, to catch newly-published queries against old code
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: CodeQL analyze
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # security-and-quality = broader coverage; security-extended = higher precision.
+          # Choose per-repo by the precision-vs-coverage tradeoff.
+          queries: security-extended
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
