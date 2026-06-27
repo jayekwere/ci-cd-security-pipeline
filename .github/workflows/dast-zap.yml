@@ -27,7 +27,7 @@ jobs:
       contents: read
       issues: write   # ZAP action can file findings as issues
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: ZAP baseline scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
@@ -45,7 +45,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: ZAP full active scan
         uses: zaproxy/action-full-scan@v0.12.0
         with:
