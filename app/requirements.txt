@@ -1,0 +1,5 @@
+# INTENTIONALLY OUTDATED — gives the SCA stage (Snyk) real CVEs to find,
+# including transitive ones (e.g. urllib3 pulled in via requests).
+# See docs/findings/sca-transitive-cves.md. Do not use these pins in real code.
+flask==2.0.0
+requests==2.25.0
