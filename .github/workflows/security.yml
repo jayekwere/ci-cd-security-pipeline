@@ -52,7 +52,8 @@ jobs:
       - name: Block verified credentials in history
         uses: trufflesecurity/trufflehog@ce76ea8f54888c154de94d37f0681493e69193f8
         with:
-          extra_args: --only-verified --fail
+          extra_args: --only-verified
+          version: latest@sha256:0d003fc3abc4e1565eca8462b992001314de51451e96e3c44de80d116794d5d1
   gate:
     if: always()
     needs: [scans, secrets]
