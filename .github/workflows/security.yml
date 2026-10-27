@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   sast-semgrep:
-    name: SAST — Semgrep (pattern)
+    name: SAST - Semgrep (pattern)
     # Skip on Dependabot PRs: they run with a read-only token and no repo secrets,
     # so secret-dependent jobs would fail. Dependabot updates are reviewed as PRs.
     if: github.actor != 'dependabot[bot]'
@@ -52,7 +52,7 @@ jobs:
           category: semgrep
 
   sca-snyk:
-    name: SCA — Snyk (dependencies)
+    name: SCA - Snyk (dependencies)
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
@@ -60,7 +60,7 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v7
-      - name: Run Snyk (report-only — see gating policy)
+      - name: Run Snyk (report-only - see gating policy)
         uses: snyk/actions/python@master
         continue-on-error: true
         env:
@@ -75,7 +75,7 @@ jobs:
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "No snyk.sarif produced (likely missing SNYK_TOKEN) — skipping upload."
+            echo "No snyk.sarif produced (likely missing SNYK_TOKEN) - skipping upload."
           fi
       - name: Upload SARIF
         if: always() && steps.snyk_sarif.outputs.exists == 'true'
@@ -85,7 +85,7 @@ jobs:
           category: snyk
 
   secrets-trufflehog:
-    name: Secrets — TruffleHog (full history, verified)
+    name: Secrets - TruffleHog (full history, verified)
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:

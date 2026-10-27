@@ -1,6 +1,6 @@
 # Semgrep vs CodeQL on identical code
 
-Both engines, same codebase. The point isn't "which is better" — it's *when each wins*,
+Both engines, same codebase. The point isn't "which is better" - it's *when each wins*,
 so you can run both deliberately instead of treating SAST as one undifferentiated step.
 
 ## The two analysis models
@@ -16,10 +16,10 @@ so you can run both deliberately instead of treating SAST as one undifferentiate
 ## What each found that the other didn't
 
 - **CodeQL caught a cross-function command injection (CWE-78)** that Semgrep's default
-  rules missed, because the source and sink were several hops apart — a flow problem, not
+  rules missed, because the source and sink were several hops apart - a flow problem, not
   a shape problem. See [cwe-78-command-injection.md](cwe-78-command-injection.md).
 - **Semgrep caught org-specific and config-shaped issues faster**, and let me author a
-  custom rule for an internal pattern in minutes — something that's possible in CodeQL but
+  custom rule for an internal pattern in minutes - something that's possible in CodeQL but
   far heavier to write.
 
 ## How to choose
@@ -36,5 +36,5 @@ Not either/or. The practical split:
 ## Takeaway
 
 Pattern-matching answers *"does this code look dangerous?"* Data-flow answers
-*"can untrusted data actually reach somewhere dangerous?"* Different questions — running
+*"can untrusted data actually reach somewhere dangerous?"* Different questions - running
 both, at the right pipeline stage, is how you cover both.

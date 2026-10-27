@@ -1,4 +1,4 @@
-# Dependabot — automated dependency and GitHub Actions pin remediation.
+# Dependabot - automated dependency and GitHub Actions pin remediation.
 # PRs are triaged by breaking-change risk, not auto-merged: low-risk CI action bumps
 # (runner deprecations) merge readily; major-version library upgrades flagged
 # compatibility-unknown are deferred. Automated detection, human-reviewed remediation.
@@ -13,7 +13,7 @@ updates:
     open-pull-requests-limit: 5
     labels: ["dependencies", "security"]
 
-  # GitHub Actions — keeps SHA pins fresh while retaining human review before merge,
+  # GitHub Actions - keeps SHA pins fresh while retaining human review before merge,
   # resolving the SHA-pin-vs-freshness tradeoff.
   - package-ecosystem: "github-actions"
     directory: "/"

@@ -1,5 +1,5 @@
 """
-INTENTIONALLY VULNERABLE — sample target for the security pipeline.
+INTENTIONALLY VULNERABLE - sample target for the security pipeline.
 
 This file exists so the SAST tools in this repo have real code to analyze.
 It contains a deliberate CWE-78 command injection used to demonstrate that
@@ -19,7 +19,7 @@ app = Flask(__name__)
 def run_lookup(hostname):
     # SINK: tainted data is concatenated into a shell command and executed.
     # Because the source is in a different function (lookup, below), a
-    # single-line pattern rule does not connect source to sink — CodeQL's
+    # single-line pattern rule does not connect source to sink - CodeQL's
     # cross-function taint tracking does.
     cmd = "nslookup " + hostname
     return subprocess.check_output(cmd, shell=True)  # noqa: S602  (intentional)

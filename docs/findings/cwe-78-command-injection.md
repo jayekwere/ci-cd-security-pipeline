@@ -5,7 +5,7 @@
 ## Summary
 
 CodeQL traced untrusted input from an external **source** to a command-execution
-**sink** across multiple function boundaries — a path that pattern-based scanning did
+**sink** across multiple function boundaries - a path that pattern-based scanning did
 not flag, because no single line looked dangerous in isolation. This is the canonical
 case for taint-tracking: the vulnerability lives in the *flow*, not in any one
 statement.
@@ -42,10 +42,10 @@ trips the rule.
 
 ## Takeaway
 
-- **Semantic analysis earns its slower runtime** on exactly this class — cross-function,
-  flow-dependent injection — where the bug is the *connection* between safe-looking parts.
+- **Semantic analysis earns its slower runtime** on exactly this class - cross-function,
+  flow-dependent injection - where the bug is the *connection* between safe-looking parts.
 - **Query-suite choice matters.** `security-extended` raises precision; `security-and-quality`
   widens coverage. Pick by whether the repo can absorb more findings to triage or needs a
   tighter, higher-confidence signal.
-- **Remediation:** validate/escape at the trust boundary and avoid shell interpolation —
+- **Remediation:** validate/escape at the trust boundary and avoid shell interpolation -
   pass arguments as a list to `subprocess` with `shell=False`, not a concatenated string.

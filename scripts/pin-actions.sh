@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# pin-actions.sh — convert `uses: org/action@tag` to verified SHA pins.
+# pin-actions.sh - convert `uses: org/action@tag` to verified SHA pins.
 #
 # Supply-chain hardening: mutable tags (v4, main) can be repointed at malicious code
 # (cf. the tj-actions/changed-files compromise). Pinning to an immutable commit SHA
-# removes that attack surface — but ONLY if the SHA is verified against the action's
+# removes that attack surface - but ONLY if the SHA is verified against the action's
 # real release, which is the whole point of this script. A pin to the wrong SHA looks
 # safe and isn't.
 #
@@ -43,7 +43,7 @@ grep -oE 'uses:[[:space:]]+[A-Za-z0-9._-]+/[A-Za-z0-9._-]+@[A-Za-z0-9._/-]+' "$F
       fi
 
       if [[ -z "${sha:-}" || ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
-        echo "  FAIL could not verify SHA for $action@$tag — refusing to pin" >&2
+        echo "  FAIL could not verify SHA for $action@$tag - refusing to pin" >&2
         exit 2   # fail loudly: never silently leave an unverified pin
       fi
 

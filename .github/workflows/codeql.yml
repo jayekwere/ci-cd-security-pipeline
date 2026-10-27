@@ -1,4 +1,4 @@
-# CodeQL — semantic (data-flow / taint) SAST.
+# CodeQL - semantic (data-flow / taint) SAST.
 # Catches cross-function source-to-sink flows that pattern matching misses
 # (worked example: docs/findings/cwe-78-command-injection.md, implemented in app/vuln.py).
 

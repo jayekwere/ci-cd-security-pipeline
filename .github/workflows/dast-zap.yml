@@ -1,9 +1,9 @@
-# DAST — OWASP ZAP (Dockerized). Runs a passive baseline scan, then an active scan,
+# DAST - OWASP ZAP (Dockerized). Runs a passive baseline scan, then an active scan,
 # against a RUNNING target. DAST proves runtime exploitability; SAST predicts code-level
-# risk — this is the runtime half of the SDLC.
+# risk - this is the runtime half of the SDLC.
 #
 # Set TARGET_URL to a deployed staging instance or a service started in this job.
-# Note: traditional spidering misses dynamically-loaded SPA/API endpoints — for SPAs,
+# Note: traditional spidering misses dynamically-loaded SPA/API endpoints - for SPAs,
 # import an OpenAPI spec and run with auth context (see README "What I'd build next").
 
 name: dast-zap
@@ -32,8 +32,8 @@ jobs:
         uses: zaproxy/action-baseline@v0.15.0
         with:
           target: ${{ github.event.inputs.target_url }}
-          # Triage passive findings by exploitability — missing CSP/security headers,
-          # CORS misconfig, cache-control — and filter passive false positives
+          # Triage passive findings by exploitability - missing CSP/security headers,
+          # CORS misconfig, cache-control - and filter passive false positives
           # (e.g. CSS timestamp pattern-matches).
           cmd_options: "-a"
 
