@@ -1,0 +1,39 @@
+{
+  "sourceCommit": "7d9a5fad88eaeefb2858b994a65f0059d39dbda4",
+  "securityRunURL": "https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/40526501980",
+  "codeQLRunURL": "https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/40526501959",
+  "outcome": "passed",
+  "gateTests": 8,
+  "semgrep": {
+    "version": "1.182.1",
+    "rulesRun": 293,
+    "filesScanned": 3,
+    "expectedBaselineFindings": 2,
+    "scannerErrors": 0
+  },
+  "intentionalNegativeGateExit": 1,
+  "missingEvidenceExit": 2,
+  "dependencyAudit": {
+    "packages": 12,
+    "vulnerabilities": 0
+  },
+  "credentialScan": {
+    "version": "3.99.7",
+    "verifiedSecrets": 0,
+    "scope": "push commit range",
+    "image": "ghcr.io/trufflesecurity/trufflehog@sha256:0d003fc3abc4e1565eca8462b992001314de51451e96e3c44de80d116794d5d1"
+  },
+  "artifactSHA256": {
+    "scan-evidence-40526501980/semgrep.json": "231a31ff248a53d866933f8a78bd3c023a175ab8ad0b43b50cb4fe81cf5b912b",
+    "scan-evidence-40526501980/negative.json": "3e6c84897396b2637c77b867bf84a22a1fcaad988ecfd71d932b2f53e750dfc9",
+    "scan-evidence-40526501980/missing-report-gate.txt": "e3730c9bed8f5b26670ef7b1ef46069cf1d11170e8800f10c73cca8a8b0753a9",
+    "scan-evidence-40526501980/negative-gate.txt": "c8dfa5811053f773fd0ac550b80586fa3e8b92f8f3e02b0b6d1572701bd8b222",
+    "scan-evidence-40526501980/dependency-audit.json": "8b2f95c54eb889556837b9c1968e7944aa266f0d1064718536bc5aca789a0a74",
+    "scan-evidence-40526501980/negative/untrusted.py": "cfff7d6cb4b71eef8f9b6579d4e9a2078c1207077c9939ca863f52c17229fd43"
+  },
+  "limits": [
+    "Remote rule packs and vulnerability feeds remain mutable",
+    "The source-bound teaching-fixture baseline expires on 2026-11-26",
+    "Credential result covers the event commit range, not an independent full-history audit"
+  ]
+}
