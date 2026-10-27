@@ -10,7 +10,7 @@ Example workflows for code analysis, dependency scanning, secret scanning and we
 | [CodeQL](.github/workflows/codeql.yml) | Pushes, pull requests and a weekly schedule | Runs Python analysis with the security-extended query suite |
 | [ZAP](.github/workflows/dast-zap.yml) | Manual dispatch with a target URL | Runs a passive baseline scan, followed by an active scan if the baseline job succeeds |
 
-Scan jobs exclude Dependabot-triggered runs. Snyk needs a repository token. ZAP needs a running target that you are authorized to scan.
+Scan jobs exclude Dependabot-triggered runs. Snyk needs its API token stored as a repository secret. ZAP needs a running target that you are authorized to scan.
 
 ## Gates and limitations
 
