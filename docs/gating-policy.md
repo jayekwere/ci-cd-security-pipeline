@@ -1,31 +1,9 @@
 # Scan-gating policy
 
-A security gate that fails on every pre-existing finding gets disabled within a week.
-The goal is a gate developers *trust* - where a red build means "you introduced
-something," not "the repo has a backlog."
+The `security` workflow requires completed SAST, dependency and verified-secret scans. The final `gate` runs with `if: always()` and accepts only successful blocking jobs. No scanner failure, absent report, skip or cancellation counts as a clean scan.
 
-## The policy
+Semgrep retains the default and security-audit packs and adds local regression rules. Every finding blocks unless its rule, path, line range and entire source-file hash match the checked baseline. The intentionally non-deployable command-injection fixture has two recorded findings, reviewed on 2026-10-27 and expiring on 2026-11-26. The review window is at most 30 days. Stale, future-dated, expired, duplicate and unused entries fail. Any change to the fixture or its callers invalidates that whole-file exception.
 
-| Stage | Mode | Rationale |
-|-------|------|-----------|
-| SAST (Semgrep) | **Block on new-code findings** | New issues are cheap to fix at PR time; this is where shift-left pays off |
-| SAST (CodeQL) | Report to code scanning; review before release | Deeper flow analysis; don't gate every PR on it, but don't let it ship |
-| SCA (Snyk) | **Report-only** for known-deferred deps | Transitive CVEs often need pin-with-test or upstream fixes - blocking would stall delivery on issues the team can't immediately fix |
-| Secrets (TruffleHog) | **Block on verified secrets** | A live, verified credential in history is always actionable and always serious |
+Application dependencies are fully version-pinned and audited without an ignore list. Verified secrets block. CodeQL remains report-only and requires manual review. ZAP is manual against an authorized target, with issue writing disabled. These are workflow checks; no release gate or protected-branch configuration is claimed.
 
-## Why "block on new, report on old"
-
-The distinction that makes the gate sustainable:
-
-- **New-code findings** are introduced by the PR under review. The author has full
-  context and the fix is cheapest now. Blocking here is fair and effective.
-- **Pre-existing / known-deferred findings** (especially transitive deps awaiting an
-  upstream fix) are tracked and reported, not used to block unrelated PRs. Otherwise the
-  gate punishes every developer for a backlog they didn't create - and gets turned off.
-
-## Verified-only secrets
-
-TruffleHog runs with `--only-verified`: it attempts to authenticate found credentials and
-reports only the live ones. This cuts the false-positive noise (expired keys, example
-values) that makes secret scanners get ignored - so when it fails the build, it means a
-real, working credential is exposed.
+The regression suite checks clean input, new findings, exact baseline matching, source changes, expiry, scanner errors, missing report structure, traversal and unused entries. The workflow also scans new unsafe code and requires gate exit 1, then omits a report and requires exit 2. Tests do not call a scanner timeout a policy rejection.

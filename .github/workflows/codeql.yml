@@ -18,7 +18,6 @@ permissions:
 jobs:
   analyze:
     name: CodeQL analyze
-    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,17 +27,17 @@ jobs:
       matrix:
         language: [python]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4.37.3
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:
           languages: ${{ matrix.language }}
-          # security-extended raises precision; security-and-quality widens coverage.
+          # security-extended adds security queries; findings still need review.
           # Choose per-repo by the precision-vs-coverage tradeoff.
           queries: security-extended
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v4.37.3
+        uses: github/codeql-action/autobuild@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
       - name: Analyze
-        uses: github/codeql-action/analyze@v4.37.3
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:
           category: "/language:${{ matrix.language }}"

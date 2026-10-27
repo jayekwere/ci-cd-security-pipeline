@@ -1,12 +1,7 @@
-# Sample target app (intentionally vulnerable)
+# Intentionally unsafe scanner fixture
 
-This directory is a **deliberately insecure** test fixture so the pipeline's scanners
-have real code to analyze. It is not production code and must not be deployed.
+`vuln.py` contains a command-injection example and an argument-list counterpart. Use it only for isolated static analysis; do not deploy it.
 
-| File | What it's for |
-|------|----------------|
-| `vuln.py` | A real CWE-78 command injection (cross-function source→sink) for CodeQL/Semgrep to catch, plus a safe counterpart. |
-| `requirements.txt` | Outdated pins (`flask`, `requests`) that pull known-vulnerable dependencies, including transitive ones, for Snyk SCA to flag. |
+The current dependency file contains a fully version-pinned, audited package closure. Earlier outdated-package findings remain historical writeups under `docs/findings/`.
 
-The findings these produce are written up in [`../docs/findings/`](../docs/findings/).
-After a pipeline run, the alerts appear under the repo's **Security → Code scanning** tab.
+Semgrep records two findings for the unsafe fixture. The main README explains its exact source-bound, expiring baseline. New or modified findings fail the gate. CodeQL separately uploads its data-flow analysis to code scanning; other scan evidence is retained as workflow artifacts.

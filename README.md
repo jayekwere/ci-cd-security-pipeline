@@ -1,59 +1,54 @@
 # CI/CD Security Pipeline
 
-Example workflows for code analysis, dependency scanning, secret scanning and web-application scanning. The repository includes an intentionally vulnerable demonstration app and writeups showing how the tools report its findings. Use an isolated test environment for that app.
+A working example of scan gates, with an intentionally unsafe application fixture and tests proving that new findings and missing scan evidence fail the workflow. The fixture is for isolated analysis only and must not be deployed.
 
-## Current workflow behavior
+## What blocks a change
 
-| Workflow | When it runs | What it does |
-| --- | --- | --- |
-| [Security](.github/workflows/security.yml) | Pushes and pull requests targeting main | Runs Semgrep, Snyk and TruffleHog; uploads available SARIF results |
-| [CodeQL](.github/workflows/codeql.yml) | Pushes, pull requests and a weekly schedule | Runs Python analysis with the security-extended query suite |
-| [ZAP](.github/workflows/dast-zap.yml) | Manual dispatch with a target URL | Runs a passive baseline scan, followed by an active scan if the baseline job succeeds |
+The [security workflow](.github/workflows/security.yml) runs on main pushes, pull requests and manual dispatch. No scan is skipped for dependency-update pull requests, and the blocking jobs need no repository secrets.
 
-Scan jobs exclude Dependabot-triggered runs. Snyk needs its API token stored as a repository secret. ZAP needs a running target that you are authorized to scan.
+- Semgrep 1.182.1 runs the original `p/default` and `p/security-audit` packs plus two local regression rules. A strict scan must succeed, report no scanner errors and include the expected application source.
+- [The gate](scripts/gate.py) rejects every finding outside the exact reviewed demonstration baseline. Each baseline entry binds rule, path, line range and the SHA-256 of the **entire source file**, including callers. Reviews last at most 30 days. Expired, stale, duplicate and unused entries fail as errors.
+- The existing command-injection fixture produces two findings across the configured rules. Its [baseline](policy/sast-baseline.json) expires on **2026-11-26**. This scoped teaching fixture is the only SAST exception; it is not an acceptable application vulnerability.
+- pip-audit 2.10.1 blocks reported vulnerabilities in the fully version-pinned application dependency closure. The old outdated dependency example was replaced with supported packages; earlier scan writeups remain historical.
+- TruffleHog scans history and fails on verified credentials. Scanner errors fail their job. The final `gate` runs even after failure and requires both blocking jobs to have succeeded, so failed, skipped or cancelled scanners cannot become a green gate.
 
-## Gates and limitations
+Action references use full commit SHAs. The default permission is `contents: read`; only the separate CodeQL analysis job can upload code-scanning results. Scan evidence is retained for 14 days, including failed runs.
 
-The current workflows are a demonstration, not a complete blocking security gate:
+## Passing and failing checks
 
-- Semgrep uses `|| true`, so its scan exit code does not block the job. There is no implemented comparison that blocks only newly introduced findings.
-- Snyk runs with `continue-on-error` and is excluded from the final Gate job's dependencies. SARIF upload is skipped if no report was produced.
-- The Gate job depends on the Semgrep and secret-scanning jobs, then prints a completion message. It does not evaluate findings or enforce the proposed new-code policy.
-- CodeQL uploads analysis results. The repository does not implement a release gate based on those findings.
-- TruffleHog scans full history with the verified-only filter. Its job status is a dependency of the Gate job.
-- Most action references are mutable tags or branches. This includes `@master` and `@main`; the workflows are not currently pinned throughout to commit SHAs.
+Local checks on October 27, 2026:
 
-The [gating-policy document](docs/gating-policy.md) describes the intended policy. Its blocking-SAST claim is ahead of the implementation above.
+| Check | Observed result |
+| --- | --- |
+| Gate regression suite | 8 tests passed |
+| Semgrep against the actual app | 293 rules, 3 scanned files, 2 expected fixture findings; source-bound baseline passed |
+| New `eval(input())` fixture | Scanner found it; gate exited 1 |
+| Missing scanner report | Gate exited 2 |
+| Locked application dependency audit | 12 packages, no known vulnerabilities reported |
+| Workflow syntax and action references | actionlint passed; all action references use commit SHAs |
 
-## Action pinning
+Exit codes: `0` accepted, `1` unreviewed finding, `2` missing, invalid or stale evidence. A clean scan and an execution error are different outcomes. CI repeats the gate tests and actual scans, rather than relying on this table.
 
-The repository includes a helper for resolving action tags to commit SHAs:
-
-```bash
-# Resolves every `uses: org/action@tag` to org/action@<sha>  # tag
-# using the action's published release commit, verified against the source repo.
-./scripts/pin-actions.sh .github/workflows/security.yml
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements-ci.txt
+python -m unittest discover -v
+mkdir -p artifacts
+semgrep scan --config p/default --config p/security-audit --config policy/semgrep.yml \
+  --strict --metrics=off --disable-version-check --json --output artifacts/semgrep.json app
+python scripts/gate.py --report artifacts/semgrep.json --baseline policy/sast-baseline.json \
+  --require-target app/vuln.py
+bash scripts/check-negative-gate.sh
+pip-audit --requirement app/requirements.txt --no-deps --disable-pip --format json
 ```
 
-It requires an authenticated GitHub CLI, Bash and GNU-compatible sed. It edits the file in place and stops if a tag cannot be resolved. The current helper looks up tags, so branch references such as `@master` and `@main` need separate handling. Review the diff before committing. Providing this script does not mean its output has already been applied to the workflows.
+## Other analysis
 
-## Documented examples
+[CodeQL](.github/workflows/codeql.yml) runs on pushes, pull requests and a weekly schedule. It uploads data-flow findings and remains report-only; this repository does not claim a CodeQL-based release gate. [ZAP](.github/workflows/dast-zap.yml) is manually dispatched against an explicitly supplied, authorized test target. It runs a passive baseline and then an active scan if the baseline succeeds. Issue creation is disabled and neither job has issue-write permission. A web alert requires validation before claiming exploitability.
 
-- [Command-injection data flow](docs/findings/cwe-78-command-injection.md), tracing input to a shell sink in the demonstration app.
-- [Semgrep and CodeQL comparison](docs/findings/semgrep-vs-codeql.md), comparing pattern matching and data-flow analysis.
-- [Transitive dependency findings](docs/findings/sca-transitive-cves.md), recording differences between a local environment and a clean CI runner.
+The [command-injection trace](docs/findings/cwe-78-command-injection.md), [tool comparison](docs/findings/semgrep-vs-codeql.md) and [dependency findings](docs/findings/sca-transitive-cves.md) document earlier runs. See [the gating policy](docs/gating-policy.md) for the current exception and failure behavior.
 
-These writeups describe their recorded runs. A dependency finding alone does not establish application reachability, and a passive web-scan alert alone does not prove exploitation.
+## Limits
 
-## Run it
-
-1. Clone or fork the repository.
-2. Add `SNYK_TOKEN` to repository Actions secrets if you want the Snyk job to run successfully.
-3. Push to main or open a pull request to run the automatic workflows. Review workflow results and available code-scanning reports.
-4. Run ZAP separately through its manual workflow, supplying an authorized test URL. It is not part of every push or pull request.
-
-## Next steps
-
-Implement and test a findings-based gate, pin action dependencies, and distinguish scanner failure from a clean scan. Add baseline comparisons for new findings and an authenticated API-aware DAST example. Reachability-aware dependency evaluation remains future work.
-
-Author: Jonathan (Jay) Ekwere, [github.com/jayekwere](https://github.com/jayekwere).
+Registry rule packs and vulnerability feeds can change; version-pinned scanners do not make those remote inputs immutable. A new rule can deliberately require baseline review. CI tool requirements pin direct scanner versions; their transitive installation is not a fully hashed lock. Action SHAs pin action source, not every binary or service used inside an action. Verified-only secret scanning can miss unverified or unsupported credentials. Baseline and workflow edits require review by a trusted maintainer; repository writers can change these controls. Branch protection and a complete release/deployment system are not implemented here.

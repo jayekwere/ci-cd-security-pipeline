@@ -1,0 +1,14 @@
+rules:
+  - id: python-shell-execution
+    languages: [python]
+    severity: ERROR
+    message: Shell execution can interpret untrusted input as commands.
+    patterns:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+  - id: python-dynamic-evaluation
+    languages: [python]
+    severity: ERROR
+    message: Do not evaluate runtime input as Python code.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)

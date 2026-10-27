@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "findings": [
+    {
+      "rule": "policy.python-shell-execution",
+      "path": "app/vuln.py",
+      "fileSHA256": "91e71fad84cf950c46e67100b9e2cbcb5ee696531d741f93e4cae4187ce70d70",
+      "startLine": 25,
+      "endLine": 25,
+      "reviewed": "2026-10-27",
+      "expires": "2026-11-26",
+      "reason": "Explicitly non-deployable command-injection scanner fixture. The entire source and callers are hash-bound; new or modified findings block."
+    },
+    {
+      "rule": "python.lang.security.audit.subprocess-shell-true.subprocess-shell-true",
+      "path": "app/vuln.py",
+      "fileSHA256": "91e71fad84cf950c46e67100b9e2cbcb5ee696531d741f93e4cae4187ce70d70",
+      "startLine": 25,
+      "endLine": 25,
+      "reviewed": "2026-10-27",
+      "expires": "2026-11-26",
+      "reason": "Explicitly non-deployable command-injection scanner fixture. The entire source and callers are hash-bound; new or modified findings block."
+    }
+  ]
+}

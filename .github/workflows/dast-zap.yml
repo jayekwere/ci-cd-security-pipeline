@@ -1,6 +1,6 @@
 # DAST - OWASP ZAP (Dockerized). Runs a passive baseline scan, then an active scan,
-# against a RUNNING target. DAST proves runtime exploitability; SAST predicts code-level
-# risk - this is the runtime half of the SDLC.
+# against an authorized running target. DAST records HTTP alerts; SAST examines code-level
+# risk. Findings require manual validation before an exploitability claim.
 #
 # Set TARGET_URL to a deployed staging instance or a service started in this job.
 # Note: traditional spidering misses dynamically-loaded SPA/API endpoints - for SPAs,
@@ -14,7 +14,6 @@ on:
       target_url:
         description: "Target URL to scan"
         required: true
-        default: "https://example.com"
 
 permissions:
   contents: read
@@ -25,13 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write   # ZAP action can file findings as issues
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.15.0
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25
         with:
           target: ${{ github.event.inputs.target_url }}
+          allow_issue_writing: false
           # Triage passive findings by exploitability - missing CSP/security headers,
           # CORS misconfig, cache-control - and filter passive false positives
           # (e.g. CSS timestamp pattern-matches).
@@ -43,10 +42,10 @@ jobs:
     needs: zap-baseline
     permissions:
       contents: read
-      issues: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: ZAP full active scan
-        uses: zaproxy/action-full-scan@v0.13.0
+        uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c
         with:
           target: ${{ github.event.inputs.target_url }}
+          allow_issue_writing: false

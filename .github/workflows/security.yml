@@ -1,112 +1,71 @@
-# Hardened CI security pipeline: SAST (Semgrep) + SCA (Snyk) + secrets (TruffleHog)
-#
-# Supply-chain note: third-party actions are tag-pinned here for readability.
-# Run `scripts/pin-actions.sh .github/workflows/security.yml` to convert these to
-# verified commit SHAs (production posture). Dependabot keeps both deps and pins fresh.
-
 name: security
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-
+  workflow_dispatch:
 permissions:
   contents: read
-
 concurrency:
   group: security-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  sast-semgrep:
-    name: SAST - Semgrep (pattern)
-    # Skip on Dependabot PRs: they run with a read-only token and no repo secrets,
-    # so secret-dependent jobs would fail. Dependabot updates are reviewed as PRs.
-    if: github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write   # upload SARIF to code scanning
+  scans:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          python-version: "3.12"
-      - name: Install Semgrep
-        run: pip install semgrep
-      - name: Run Semgrep (SARIF)
-        # report-only: findings populate the Security tab without failing the build,
-        # so the demo stays green while alerts remain visible. See docs/gating-policy.md.
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-ci.txt
+      - name: Gate regression tests
+        run: python -m unittest discover -v
+      - name: Scan the actual demonstration source
         run: |
-          semgrep scan \
-            --config p/default \
-            --config p/security-audit \
-            --sarif --output semgrep.sarif || true
-      - name: Upload SARIF
+          mkdir -p artifacts
+          semgrep scan --config p/default --config p/security-audit --config policy/semgrep.yml --strict --metrics=off --disable-version-check --json --output artifacts/semgrep.json app
+          python scripts/gate.py --report artifacts/semgrep.json --baseline policy/sast-baseline.json --require-target app/vuln.py
+      - name: Reject new unsafe code and absent scan evidence
+        run: bash scripts/check-negative-gate.sh
+      - name: Block vulnerable resolved application dependencies
+        run: pip-audit --requirement app/requirements.txt --no-deps --disable-pip --format json --output artifacts/dependency-audit.json
+      - name: Retain reports, including failures
         if: always()
-        uses: github/codeql-action/upload-sarif@v4.37.3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          sarif_file: semgrep.sarif
-          category: semgrep
-
-  sca-snyk:
-    name: SCA - Snyk (dependencies)
-    if: github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
+          name: scan-evidence-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 14
+          if-no-files-found: error
+  secrets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - name: Run Snyk (report-only - see gating policy)
-        uses: snyk/actions/python@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          args: --file=app/requirements.txt --sarif-file-output=snyk.sarif --severity-threshold=high
-      - name: Check SARIF exists
-        id: snyk_sarif
-        if: always()
-        run: |
-          if [ -f snyk.sarif ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "No snyk.sarif produced (likely missing SNYK_TOKEN) - skipping upload."
-          fi
-      - name: Upload SARIF
-        if: always() && steps.snyk_sarif.outputs.exists == 'true'
-        uses: github/codeql-action/upload-sarif@v4.37.3
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Block verified credentials in history
+        uses: trufflesecurity/trufflehog@ce76ea8f54888c154de94d37f0681493e69193f8
         with:
-          sarif_file: snyk.sarif
-          category: snyk
-
-  secrets-trufflehog:
-    name: Secrets - TruffleHog (full history, verified)
-    if: github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0   # full git history, not just current files
-      - name: Scan git history for verified secrets
-        uses: trufflesecurity/trufflehog@main
-        with:
-          extra_args: --only-verified   # live-credential verification, cut false positives
-
+          extra_args: --only-verified --fail
   gate:
-    name: Gate
-    if: github.actor != 'dependabot[bot]'
-    needs: [sast-semgrep, secrets-trufflehog]
-    runs-on: ubuntu-latest
+    if: always()
+    needs: [scans, secrets]
+    runs-on: ubuntu-24.04
+    permissions: {}
     steps:
-      - name: Enforce gate
+      - name: Require every blocking job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
         run: |
-          echo "SAST and secrets stages completed."
-          echo "Findings are reported to Security > Code scanning."
-          echo "SCA runs report-only for known-deferred dependencies (docs/gating-policy.md)."
+          python3 - <<'PY'
+          import json, os
+          results = json.loads(os.environ['RESULTS'])
+          assert results and all(job['result'] == 'success' for job in results.values()), results
+          print('PASS every required scanner and regression check succeeded')
+          PY
