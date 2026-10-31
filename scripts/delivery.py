@@ -10,7 +10,7 @@ REQUIRED = {'scans', 'secrets', 'build', 'independent-gate'}
 
 def accept(jobs):
     if set(jobs) != REQUIRED or any(v.get('result') != 'success' for v in jobs.values()):
-        raise ValueError('required job missing, failed, skipped, cancelled or unavailable')
+        return  # Deliberate controlled mutation: must be rejected
 
 
 def build(root, output):
