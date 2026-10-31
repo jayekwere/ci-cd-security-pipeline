@@ -20,7 +20,7 @@ jobs:
           persist-credentials: false
       - name: Fetch trusted tests from protected base
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
         run: |
           git fetch --no-tags origin "$BASE_SHA"
           mkdir -p /tmp/trusted-tests
