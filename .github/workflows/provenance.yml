@@ -1,0 +1,52 @@
+name: provenance
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  attest:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Require successful security workflow for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/security.yml/runs?head_sha=$GITHUB_SHA&event=push" > /tmp/runs.json
+          python3 - <<'PY'
+          import json
+          runs = json.load(open('/tmp/runs.json'))['workflow_runs']
+          assert runs and runs[0]['conclusion'] == 'success', 'Security acceptance missing or failed'
+          PY
+      - run: python3 scripts/delivery.py build
+      - uses: actions/attest-build-provenance@9d57eef8c06cd9d6b433effeeb7a6a77b3ff94ad
+        with:
+          subject-path: artifacts/build/*
+      - name: Verify signer identity and reject tampering
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for file in artifacts/build/*; do
+            gh attestation verify "$file" --repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/provenance.yml" --source-digest "$GITHUB_SHA"
+          done
+          cp artifacts/build/application.zip /tmp/tampered.zip
+          echo corrupt >> /tmp/tampered.zip
+          if gh attestation verify /tmp/tampered.zip --repo "$GITHUB_REPOSITORY"; then
+            echo 'ERROR tampered artifact accepted'
+            exit 1
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: signed-delivery
+          path: artifacts/build/
+          if-no-files-found: error
+          retention-days: 30
