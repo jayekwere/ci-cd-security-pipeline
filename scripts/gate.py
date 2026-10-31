@@ -17,7 +17,15 @@ def findings(report, root):
         relative = Path(item["path"])
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError("finding path must stay inside the repository")
-        raw = (root / relative).read_bytes()
+        resolved = (root / relative).resolve()
+        if not resolved.is_relative_to(root.resolve()):
+            raise ValueError("finding resolves outside repository")
+        if not isinstance(item["check_id"], str) or not item["check_id"].strip():
+            raise ValueError("invalid rule identity")
+        first, last = item["start"]["line"], item["end"]["line"]
+        if type(first) is not int or type(last) is not int or first < 1 or last < first:
+            raise ValueError("invalid finding location")
+        raw = resolved.read_bytes()
         # Bind the entire fixture, including its callers, not just the sink line.
         key = (item["check_id"], relative.as_posix(),
                hashlib.sha256(raw).hexdigest(), item["start"]["line"], item["end"]["line"])

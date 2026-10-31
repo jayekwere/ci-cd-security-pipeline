@@ -13,6 +13,11 @@ updates:
     open-pull-requests-limit: 5
     labels: ["dependencies", "security"]
 
+  - package-ecosystem: "pip"
+    directory: "/app"
+    schedule:
+      interval: "weekly"
+
   # GitHub Actions - keeps SHA pins fresh while retaining human review before merge,
   # resolving the SHA-pin-vs-freshness tradeoff.
   - package-ecosystem: "github-actions"

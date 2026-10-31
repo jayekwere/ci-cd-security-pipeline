@@ -1,19 +1,8 @@
-# DAST - OWASP ZAP (Dockerized). Runs a passive baseline scan, then an active scan,
-# against an authorized running target. DAST records HTTP alerts; SAST examines code-level
-# risk. Findings require manual validation before an exploitability claim.
-#
-# Set TARGET_URL to a deployed staging instance or a service started in this job.
-# Note: traditional spidering misses dynamically-loaded SPA/API endpoints - for SPAs,
-# import an OpenAPI spec and run with auth context (see README "What I'd build next").
-
+# Manual scans are restricted to a disposable runner-local static target.
 name: dast-zap
 
 on:
   workflow_dispatch:
-    inputs:
-      target_url:
-        description: "Target URL to scan"
-        required: true
 
 permissions:
   contents: read
@@ -21,15 +10,26 @@ permissions:
 jobs:
   zap-baseline:
     name: ZAP baseline (passive)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Start disposable local target
+        run: |
+          python3 app/server.py > /tmp/dast-server.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl --fail http://127.0.0.1:8080/; then exit 0; fi
+            sleep 1
+          done
+          exit 1
       - name: ZAP baseline scan
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25
         with:
-          target: ${{ github.event.inputs.target_url }}
+          target: http://127.0.0.1:8080
           allow_issue_writing: false
           # Triage passive findings by exploitability - missing CSP/security headers,
           # CORS misconfig, cache-control - and filter passive false positives
@@ -38,14 +38,25 @@ jobs:
 
   zap-full:
     name: ZAP full (active)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: zap-baseline
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Start disposable local target
+        run: |
+          python3 app/server.py > /tmp/dast-server.log 2>&1 &
+          for attempt in $(seq 1 20); do
+            if curl --fail http://127.0.0.1:8080/; then exit 0; fi
+            sleep 1
+          done
+          exit 1
       - name: ZAP full active scan
         uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c
         with:
-          target: ${{ github.event.inputs.target_url }}
+          target: http://127.0.0.1:8080
           allow_issue_writing: false

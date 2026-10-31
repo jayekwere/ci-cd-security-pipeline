@@ -54,19 +54,30 @@ jobs:
         with:
           extra_args: --only-verified
           version: latest@sha256:0d003fc3abc4e1565eca8462b992001314de51451e96e3c44de80d116794d5d1
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/delivery.py build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: delivery-evidence
+          path: artifacts/build/
+          if-no-files-found: error
+          retention-days: 14
   gate:
     if: always()
-    needs: [scans, secrets]
+    needs: [scans, secrets, build]
     runs-on: ubuntu-24.04
-    permissions: {}
+    timeout-minutes: 5
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - name: Require every blocking job to succeed
         env:
           RESULTS: ${{ toJSON(needs) }}
-        run: |
-          python3 - <<'PY'
-          import json, os
-          results = json.loads(os.environ['RESULTS'])
-          assert results and all(job['result'] == 'success' for job in results.values()), results
-          print('PASS every required scanner and regression check succeeded')
-          PY
+        run: python3 scripts/delivery.py accept "$RESULTS"

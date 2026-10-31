@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   analyze:
+    timeout-minutes: 20
     name: CodeQL analyze
     runs-on: ubuntu-latest
     permissions:
@@ -28,6 +29,8 @@ jobs:
         language: [python]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - name: Initialize CodeQL
         uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
         with:

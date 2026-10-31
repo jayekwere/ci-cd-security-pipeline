@@ -52,6 +52,23 @@ class GateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             assess(report, self.empty, self.root)
 
+    def test_symlink_escape_fails(self):
+        with tempfile.TemporaryDirectory() as outside:
+            target = Path(outside) / "outside.py"
+            target.write_text("eval(value)\n")
+            (self.root / "demo.py").unlink()
+            (self.root / "demo.py").symlink_to(target)
+            with self.assertRaises(ValueError):
+                assess(self.report, self.empty, self.root)
+
+    def test_invalid_locations_fail(self):
+        for first, last in [(0, 1), (2, 1), (True, 1), ("1", 1)]:
+            report = copy.deepcopy(self.report)
+            report["results"][0]["start"]["line"] = first
+            report["results"][0]["end"]["line"] = last
+            with self.assertRaises(ValueError):
+                assess(report, self.empty, self.root)
+
     def test_unused_baseline_fails(self):
         with self.assertRaises(ValueError):
             assess({"results": [], "errors": []}, {"schemaVersion": 1, "findings": [self.entry]},
