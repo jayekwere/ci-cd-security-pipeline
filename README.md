@@ -20,7 +20,7 @@ Local checks on October 27, 2026:
 
 | Check | Observed result |
 | --- | --- |
-| Gate regression suite | 14 tests passed |
+| Gate regression suite | 15 tests passed |
 | Semgrep against the actual app | 293 rules, 3 scanned files, 2 expected fixture findings; source-bound baseline passed |
 | New `eval(input())` fixture | Scanner found it; gate exited 1 |
 | Missing scanner report | Gate exited 2 |
