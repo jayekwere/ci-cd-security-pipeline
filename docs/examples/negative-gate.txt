@@ -1,0 +1,1 @@
+DENY policy.python-dynamic-evaluation artifacts/negative/untrusted.py:1

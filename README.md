@@ -10,7 +10,7 @@ The [security workflow](.github/workflows/security.yml) runs on main pushes, pul
 - [The gate](scripts/gate.py) rejects every finding outside the exact reviewed demonstration baseline. Each baseline entry binds rule, path, line range and the SHA-256 of the **entire source file**, including callers. Reviews last at most 30 days. Expired, stale, duplicate and unused entries fail as errors.
 - The existing command-injection fixture produces two findings across the configured rules. Its [baseline](policy/sast-baseline.json) expires on **2026-11-26**. This scoped teaching fixture is the only SAST exception; it is not an acceptable application vulnerability.
 - pip-audit 2.10.1 blocks reported vulnerabilities in the fully version-pinned application dependency closure. The old outdated dependency example was replaced with supported packages; earlier scan writeups remain historical.
-- TruffleHog scans the event's commit range and fails on verified credentials. Its action source and scanner image are both pinned. Scanner errors fail their job. The final `gate` runs even after failure and requires both blocking jobs to have succeeded, so failed, skipped or cancelled scanners cannot become a green gate.
+- TruffleHog scans the event's commit range and fails on verified credentials. Its action source and scanner image are both pinned. Scanner errors fail their job. The final `gate` runs even after failure and requires all blocking jobs to have succeeded, so failed, skipped or cancelled scanners cannot become a green gate.
 
 Action references use full commit SHAs. The default permission is `contents: read`; only the separate CodeQL analysis job can upload code-scanning results. Scan evidence is retained for 14 days, including failed runs.
 
@@ -20,7 +20,7 @@ Local checks on October 27, 2026:
 
 | Check | Observed result |
 | --- | --- |
-| Gate regression suite | 8 tests passed |
+| Gate regression suite | 15 tests passed |
 | Semgrep against the actual app | 293 rules, 3 scanned files, 2 expected fixture findings; source-bound baseline passed |
 | New `eval(input())` fixture | Scanner found it; gate exited 1 |
 | Missing scanner report | Gate exited 2 |
@@ -45,7 +45,7 @@ pip-audit --requirement app/requirements.txt --no-deps --disable-pip --format js
 
 ## Other analysis
 
-[CodeQL](.github/workflows/codeql.yml) runs on pushes, pull requests and a weekly schedule. It uploads data-flow findings and remains report-only; this repository does not claim a CodeQL-based release gate. [ZAP](.github/workflows/dast-zap.yml) is manually dispatched against an explicitly supplied, authorized test target. It runs a passive baseline and then an active scan if the baseline succeeds. Issue creation is disabled and neither job has issue-write permission. A web alert requires validation before claiming exploitability.
+[CodeQL](.github/workflows/codeql.yml) runs on pushes, pull requests and a weekly schedule. It uploads data-flow findings and remains report-only; this repository does not claim a CodeQL-based release gate. [ZAP](.github/workflows/dast-zap.yml) is manually dispatched against the disposable runner-local `app/server.py` target. There is no external target input. It runs a passive baseline and then an active scan if the baseline succeeds. Issue creation is disabled and neither job has issue-write permission. A web alert requires validation before claiming exploitability.
 
 The [command-injection trace](docs/findings/cwe-78-command-injection.md), [tool comparison](docs/findings/semgrep-vs-codeql.md) and [dependency findings](docs/findings/sca-transitive-cves.md) document earlier runs. See [the gating policy](docs/gating-policy.md) for the current exception and failure behavior.
 
@@ -58,3 +58,30 @@ The first hosted security run caught a scanner invocation error: the action alre
 ## Hosted verification
 
 [Security run #40526501980](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/40526501980) passed all three jobs for implementation commit `7d9a5fa`: **8 gate tests**, **293 Semgrep rules with 2 exact baseline findings and 0 scanner errors**, **12 audited packages with 0 reported vulnerabilities**, and **0 verified credentials in the pushed commit range**. The unsafe-code and missing-report controls returned exits **1** and **2**, and the final gate required both scanner jobs to succeed. [CodeQL run #40526501959](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/40526501959) also passed its analysis job. Downloaded artifact hashes and scan scope are in [the exact record](docs/hosted-verification.json).
+
+## Delivery evidence and trust boundaries
+
+The safe application is `app/server.py`; the unsafe historical fixture is never packaged. Run `python3 scripts/delivery.py build` to create a deterministic ZIP, CycloneDX inventory and SHA-256 manifest in `artifacts/build`. Run `python3 scripts/delivery.py verify artifacts/build` to reject absent or modified evidence. The application uses only Python's standard library; the SBOM lists the application and does not claim to inventory the runner or Python distribution.
+
+| Required job | Acceptance | Failure / unavailable |
+| --- | --- | --- |
+| scans | Strict Semgrep report, exact baseline, dependency audit, regression demonstrations | Any failed command blocks |
+| secrets | Pinned TruffleHog verified-credential scan | Scanner failure blocks; unverified secrets remain a limitation |
+| build | Compile safe source, reproducible ZIP, SBOM, verified digest manifest, successful upload | Missing or corrupt evidence blocks |
+| gate | Exact required job set, every result success | Missing, skipped, cancelled or failed job blocks |
+
+CodeQL and manual local ZAP are supplemental diagnostics, not release acceptance checks. No meaningful deployment IaC exists, so no IaC scanner is claimed. Artifact digests detect corruption but are not signed provenance. Releases require a verified exact commit, all required jobs successful, reviewed policy changes and verified artifacts. This repository does not yet automate signed release attestations.
+
+The threat model includes malicious application changes, scanner failures, stale exceptions and missing artifacts. It assumes trusted GitHub runners, scanner publishers and maintainers. A writer who can modify workflow and gate code can bypass repository-local policy. On October 31, 2026, the GitHub API reported main as **not protected**. Configure required `gate` checks, strict branch updates, independent approving review, dismissal of stale reviews, restricted bypass and CODEOWNERS review before relying on this pipeline for production. These settings are requirements, not configured-control claims.
+
+The original November 26, 2026 exception remains unchanged. Exact rule, path, line range and entire-file digest must match; a nonempty review reason and a review window of at most 30 days are mandatory. Expired, future, duplicate and unused exceptions fail. Baseline changes require an independent source review; never extend the date merely to make CI green.
+
+Maintenance: review Dependabot updates, monitor scanner feeds, refresh evidence after policy changes, and review the fixture before its exception expires. Add `/app` to dependency update coverage when changing its lock. Historical findings under `docs/findings` describe earlier deliberately unsafe source and dependency versions, not current vulnerability counts.
+
+An offline tracked-file token-shape check additionally blocks AWS access-key IDs and GitHub classic token shapes, including nonfunctional synthetic credentials. Tests construct synthetic values in memory. Unsupported credential formats remain outside this check. CI validates workflow syntax with actionlint 1.7.7.
+
+## Current hosted verification — October 31, 2026
+
+[Security run 41241785440](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241785440) passed all four required jobs on `3918ffe`: 15 tests, workflow validation, strict SAST, safe dependency audit, vulnerable dependency rejection, synthetic token checks and build evidence. [CodeQL](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241785449) passed. [Local-target ZAP](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241594676) passed passive and active jobs on the earlier implementation commit; the only subsequent DAST change renamed an unused readiness-loop variable.
+
+Actual downloaded negative-gate and dependency reports are in [docs/examples](docs/examples). [The evidence record](docs/verification-2026-10-31.json) contains hashes of downloaded reports and build artifacts. These are generated outputs, not illustrative screenshots. The build manifest was verified again after download. [Run 41241665105](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241665105) also demonstrates an actual validation failure propagating to a failed final gate; the corrected workflow passed.
