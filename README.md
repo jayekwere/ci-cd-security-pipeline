@@ -20,7 +20,7 @@ Local checks on October 27, 2026:
 
 | Check | Observed result |
 | --- | --- |
-| Gate regression suite | 12 tests passed |
+| Gate regression suite | 14 tests passed |
 | Semgrep against the actual app | 293 rules, 3 scanned files, 2 expected fixture findings; source-bound baseline passed |
 | New `eval(input())` fixture | Scanner found it; gate exited 1 |
 | Missing scanner report | Gate exited 2 |
@@ -77,3 +77,5 @@ The threat model includes malicious application changes, scanner failures, stale
 The original November 26, 2026 exception remains unchanged. Exact rule, path, line range and entire-file digest must match; a nonempty review reason and a review window of at most 30 days are mandatory. Expired, future, duplicate and unused exceptions fail. Baseline changes require an independent source review; never extend the date merely to make CI green.
 
 Maintenance: review Dependabot updates, monitor scanner feeds, refresh evidence after policy changes, and review the fixture before its exception expires. Add `/app` to dependency update coverage when changing its lock. Historical findings under `docs/findings` describe earlier deliberately unsafe source and dependency versions, not current vulnerability counts.
+
+An offline tracked-file token-shape check additionally blocks AWS access-key IDs and GitHub classic token shapes, including nonfunctional synthetic credentials. Tests construct synthetic values in memory. Unsupported credential formats remain outside this check. CI validates workflow syntax with actionlint 1.7.7.
