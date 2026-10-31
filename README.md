@@ -85,3 +85,19 @@ An offline tracked-file token-shape check additionally blocks AWS access-key IDs
 [Security run 41241785440](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241785440) passed all four required jobs on `3918ffe`: 15 tests, workflow validation, strict SAST, safe dependency audit, vulnerable dependency rejection, synthetic token checks and build evidence. [CodeQL](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241785449) passed. [Local-target ZAP](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241594676) passed passive and active jobs on the earlier implementation commit; the only subsequent DAST change renamed an unused readiness-loop variable.
 
 Actual downloaded negative-gate and dependency reports are in [docs/examples](docs/examples). [The evidence record](docs/verification-2026-10-31.json) contains hashes of downloaded reports and build artifacts. These are generated outputs, not illustrative screenshots. The build manifest was verified again after download. [Run 41241665105](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241665105) also demonstrates an actual validation failure propagating to a failed final gate; the corrected workflow passed.
+
+## Protected delivery and signed provenance
+
+The `independent-gate` job obtains the regression tests from the PR base commit, rather than trusting candidate tests. It runs those tests against candidate gate code without secrets or write permissions. This catches weakening the gate while editing its tests in the same PR. It is a regression boundary, not a proof against arbitrary malicious Python. Changes to the workflow itself require independent protected-branch review.
+
+The main-only [provenance workflow](.github/workflows/provenance.yml) requires successful push security checks for the exact source commit, rebuilds the safe application, signs every delivery file using GitHub OIDC artifact attestations, verifies signer workflow and source digest, and demonstrates that a tampered ZIP fails verification. No signing credentials are stored. Signing permissions exist only in this job; pull request builds never receive them. This provides signed build provenance, not a SLSA Level 3 claim.
+
+Verify a downloaded artifact with:
+
+```sh
+gh attestation verify application.zip --repo jayekwere/ci-cd-security-pipeline \
+  --signer-workflow jayekwere/ci-cd-security-pipeline/.github/workflows/provenance.yml \
+  --source-digest RELEASE_COMMIT_SHA
+```
+
+The protection rollout requires strict `gate` and `independent-gate` checks from GitHub Actions, one approving review, stale-review dismissal, approval of the latest push, resolved conversations, administrator enforcement, and disabled force pushes/deletions. With only one collaborator, subsequent merges require adding an authorized independent reviewer. Repository administrators retain the ability to edit protection settings; this is an unavoidable administrative trust boundary. Verify live settings through the GitHub API rather than treating this document as evidence of configuration.

@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import zipfile
 
-REQUIRED = {'scans', 'secrets', 'build'}
+REQUIRED = {'scans', 'secrets', 'build', 'independent-gate'}
 
 
 def accept(jobs):

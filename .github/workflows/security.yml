@@ -11,6 +11,23 @@ concurrency:
   group: security-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  independent-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Fetch trusted tests from protected base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+        run: |
+          git fetch --no-tags origin "$BASE_SHA"
+          mkdir -p /tmp/trusted-tests
+          for file in test_gate.py test_gate_cli.py test_delivery.py test_secrets.py; do
+            git show "$BASE_SHA:tests/$file" > "/tmp/trusted-tests/$file"
+          done
+          PYTHONPATH="$GITHUB_WORKSPACE" python3 -m unittest discover -s /tmp/trusted-tests -v
   scans:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -75,7 +92,7 @@ jobs:
           retention-days: 14
   gate:
     if: always()
-    needs: [scans, secrets, build]
+    needs: [scans, secrets, build, independent-gate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
