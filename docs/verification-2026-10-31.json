@@ -1,0 +1,23 @@
+{
+  "commit": "3918ffe",
+  "securityRun": 41241785440,
+  "codeqlRun": 41241785449,
+  "dastRun": 41241594676,
+  "unitTests": 15,
+  "downloadedEvidenceSHA256": {
+    "delivery-evidence/digests.json": "45056bff339e7469081399f211a0c8c54ad9fe6cb05d10dfbf7923f873eed819",
+    "delivery-evidence/sbom.json": "9ed9f7597e2962157a623d38e0bca82db53e9320f49a207f26b9755e02f73725",
+    "delivery-evidence/application.zip": "a773ba3862bb9af09d7ca436fce3abca8b1303e9042e82ab6bd6a48419d0c06d",
+    "scan-evidence-41241785440/semgrep.json": "7637ce4de0e603a3f3f4270dd5c4ab1d11a8d8885d7de3922c97f84334a86548",
+    "scan-evidence-41241785440/negative.json": "960dccbeb6960a76895cfb79e68ff5a2c3e910c1cc3899416b3b3b160ac993e2",
+    "scan-evidence-41241785440/missing-report-gate.txt": "e3730c9bed8f5b26670ef7b1ef46069cf1d11170e8800f10c73cca8a8b0753a9",
+    "scan-evidence-41241785440/negative-dependency.json": "ffc3a4302abdf625a813abd9e8d17e5e33675796459043a28df1c7b4b40fc28b",
+    "scan-evidence-41241785440/vulnerable-requirements.txt": "8caa32834ed25cd885f19ce1d36b90db608bda455c450a79f38f1442a0cc8381",
+    "scan-evidence-41241785440/negative-gate.txt": "c8dfa5811053f773fd0ac550b80586fa3e8b92f8f3e02b0b6d1572701bd8b222",
+    "scan-evidence-41241785440/dependency-audit.json": "8b2f95c54eb889556837b9c1968e7944aa266f0d1064718536bc5aca789a0a74",
+    "scan-evidence-41241785440/negative/untrusted.py": "cfff7d6cb4b71eef8f9b6579d4e9a2078c1207077c9939ca863f52c17229fd43",
+    "zap_scan/report_html.html": "3dbb533a920fdbb4874c915979a751b200f927e4d399860d56ec69570c1c4356",
+    "zap_scan/report_md.md": "1220d557c77f69d62a2c717d2d3aecf4bb2b9889fc4f940dea36d7a56495053e",
+    "zap_scan/report_json.json": "52622ab27eb8582dec3225916b600075ae47c517ccebecca01872f433ac97e9c"
+  }
+}
