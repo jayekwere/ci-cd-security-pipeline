@@ -1,6 +1,6 @@
 # CI/CD Security Pipeline
 
-A working example of scan gates, with an intentionally unsafe application fixture and tests proving that new findings and missing scan evidence fail the workflow. The fixture is for isolated analysis only and must not be deployed.
+A secure delivery reference with [v1.1.0](https://github.com/jayekwere/ci-cd-security-pipeline/releases/tag/v1.1.0) signed build evidence, protected merge requirements, and independent gate regression checks. Includes scan gates, with an intentionally unsafe application fixture and tests proving that new findings and missing scan evidence fail the workflow. The fixture is for isolated analysis only and must not be deployed.
 
 ## What blocks a change
 
@@ -16,7 +16,7 @@ Action references use full commit SHAs. The default permission is `contents: rea
 
 ## Passing and failing checks
 
-Local checks on October 27, 2026:
+Verified checks (October 31, 2026); historical scan counts below describe the linked evidence, not fixed scanner coverage:
 
 | Check | Observed result |
 | --- | --- |
@@ -51,11 +51,11 @@ The [command-injection trace](docs/findings/cwe-78-command-injection.md), [tool 
 
 ## Limits
 
-Registry rule packs and vulnerability feeds can change; version-pinned scanners do not make those remote inputs immutable. A new rule can deliberately require baseline review. CI tool requirements pin direct scanner versions; their transitive installation is not a fully hashed lock. Action SHAs pin action source, not every binary or service used inside an action; the TruffleHog image is separately digest-pinned. Verified-only secret scanning can miss unverified or unsupported credentials, and event-range scans are not a full repository-history audit. Baseline and workflow edits require review by a trusted maintainer; repository writers can change these controls. Branch protection and a complete release/deployment system are not implemented here.
+Registry rule packs and vulnerability feeds can change; version-pinned scanners do not make those remote inputs immutable. A new rule can deliberately require baseline review. CI tool requirements pin direct scanner versions; their transitive installation is not a fully hashed lock. Action SHAs pin action source, not every binary or service used inside an action; the TruffleHog image is separately digest-pinned. Verified-only secret scanning can miss unverified or unsupported credentials, and event-range scans are not a full repository-history audit. Baseline and workflow edits require review by a trusted maintainer; repository writers can change these controls. Protected review and required checks enforce merges to `main`; signed build provenance is available in v1.1.0. Deployment automation is outside this reference.
 
 The first hosted security run caught a scanner invocation error: the action already supplies `--fail`, so passing it again was rejected. The final gate correctly failed when that scanner failed. The duplicate flag was removed and the scanner image was pinned to the digest observed in that run; a subsequent hosted result is recorded separately.
 
-## Hosted verification
+## Historical hosted verification
 
 [Security run #40526501980](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/40526501980) passed all three jobs for implementation commit `7d9a5fa`: **8 gate tests**, **293 Semgrep rules with 2 exact baseline findings and 0 scanner errors**, **12 audited packages with 0 reported vulnerabilities**, and **0 verified credentials in the pushed commit range**. The unsafe-code and missing-report controls returned exits **1** and **2**, and the final gate required both scanner jobs to succeed. [CodeQL run #40526501959](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/40526501959) also passed its analysis job. Downloaded artifact hashes and scan scope are in [the exact record](docs/hosted-verification.json).
 
@@ -66,21 +66,22 @@ The safe application is `app/server.py`; the unsafe historical fixture is never 
 | Required job | Acceptance | Failure / unavailable |
 | --- | --- | --- |
 | scans | Strict Semgrep report, exact baseline, dependency audit, regression demonstrations | Any failed command blocks |
-| secrets | Pinned TruffleHog verified-credential scan | Scanner failure blocks; unverified secrets remain a limitation |
+| secrets | Pinned TruffleHog scan and offline token-shape check | Scanner failure blocks; unverified secrets remain a limitation |
 | build | Compile safe source, reproducible ZIP, SBOM, verified digest manifest, successful upload | Missing or corrupt evidence blocks |
+| independent-gate | Trusted-base regression tests pass against candidate gate code | Weakened candidate tests cannot replace the trusted tests |
 | gate | Exact required job set, every result success | Missing, skipped, cancelled or failed job blocks |
 
-CodeQL and manual local ZAP are supplemental diagnostics, not release acceptance checks. No meaningful deployment IaC exists, so no IaC scanner is claimed. Artifact digests detect corruption but are not signed provenance. Releases require a verified exact commit, all required jobs successful, reviewed policy changes and verified artifacts. This repository does not yet automate signed release attestations.
+CodeQL and manual local ZAP are supplemental diagnostics, not release acceptance checks. No meaningful deployment IaC exists, so no IaC scanner is claimed. Artifact digests detect corruption; the separate main-only provenance workflow signs delivery artifacts and verifies their identity. Releases require a verified exact commit, all required jobs successful, reviewed policy changes and verified artifacts. The v1.1.0 release includes signed provenance and verification evidence; release publication remains a maintainer action.
 
-The threat model includes malicious application changes, scanner failures, stale exceptions and missing artifacts. It assumes trusted GitHub runners, scanner publishers and maintainers. A writer who can modify workflow and gate code can bypass repository-local policy. On October 31, 2026, the GitHub API reported main as **not protected**. Configure required `gate` checks, strict branch updates, independent approving review, dismissal of stale reviews, restricted bypass and CODEOWNERS review before relying on this pipeline for production. These settings are requirements, not configured-control claims.
+The threat model includes malicious application changes, scanner failures, stale exceptions and missing artifacts. It assumes trusted GitHub runners, scanner publishers and maintainers. Changes to workflow and gate code require protected review. Live GitHub settings verified on October 31, 2026 enforce strict `gate` and `independent-gate` checks from GitHub Actions, one approving review, stale-review dismissal, latest-push approval, resolved conversations and administrator enforcement. Force pushes and branch deletion are disabled. CODEOWNERS approval is not configured. Administrators can still change these settings.
 
 The original November 26, 2026 exception remains unchanged. Exact rule, path, line range and entire-file digest must match; a nonempty review reason and a review window of at most 30 days are mandatory. Expired, future, duplicate and unused exceptions fail. Baseline changes require an independent source review; never extend the date merely to make CI green.
 
-Maintenance: review Dependabot updates, monitor scanner feeds, refresh evidence after policy changes, and review the fixture before its exception expires. Add `/app` to dependency update coverage when changing its lock. Historical findings under `docs/findings` describe earlier deliberately unsafe source and dependency versions, not current vulnerability counts.
+Maintenance: review Dependabot updates, monitor scanner feeds, refresh evidence after policy changes, and review the fixture before its exception expires. Dependabot covers both root CI requirements and `/app` dependencies. Historical findings under `docs/findings` describe earlier deliberately unsafe source and dependency versions, not current vulnerability counts.
 
 An offline tracked-file token-shape check additionally blocks AWS access-key IDs and GitHub classic token shapes, including nonfunctional synthetic credentials. Tests construct synthetic values in memory. Unsupported credential formats remain outside this check. CI validates workflow syntax with actionlint 1.7.7.
 
-## Current hosted verification — October 31, 2026
+## Historical v1.0.0 verification — October 31, 2026
 
 [Security run 41241785440](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241785440) passed all four required jobs on `3918ffe`: 15 tests, workflow validation, strict SAST, safe dependency audit, vulnerable dependency rejection, synthetic token checks and build evidence. [CodeQL](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241785449) passed. [Local-target ZAP](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41241594676) passed passive and active jobs on the earlier implementation commit; the only subsequent DAST change renamed an unused readiness-loop variable.
 
@@ -100,4 +101,14 @@ gh attestation verify application.zip --repo jayekwere/ci-cd-security-pipeline \
   --source-digest RELEASE_COMMIT_SHA
 ```
 
-The protection rollout requires strict `gate` and `independent-gate` checks from GitHub Actions, one approving review, stale-review dismissal, approval of the latest push, resolved conversations, administrator enforcement, and disabled force pushes/deletions. With only one collaborator, subsequent merges require adding an authorized independent reviewer. Repository administrators retain the ability to edit protection settings; this is an unavoidable administrative trust boundary. Verify live settings through the GitHub API rather than treating this document as evidence of configuration.
+The configured protection requires strict `gate` and `independent-gate` checks from GitHub Actions, one approving review, stale-review dismissal, approval of the latest push, resolved conversations, administrator enforcement, and disabled force pushes/deletions. With only one collaborator, subsequent merges require adding an authorized independent reviewer. Repository administrators retain the ability to edit protection settings; this is an unavoidable administrative trust boundary. Verify live settings through the GitHub API rather than treating this document as evidence of configuration.
+
+## v1.1.0 verification and bypass evidence
+
+Release commit: [`e6d3b5c`](https://github.com/jayekwere/ci-cd-security-pipeline/commit/e6d3b5cddbd65568ba6960a342e819114da0c61e), merged through [PR #13](https://github.com/jayekwere/ci-cd-security-pipeline/pull/13). [Main security](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41243595061) and [CodeQL](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41243595080) passed. The [provenance run](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41243719714) signed the delivery files, verified the workflow identity and source commit, and rejected a tampered ZIP. The downloaded ZIP was independently verified again.
+
+[Controlled negative PR #14](https://github.com/jayekwere/ci-cd-security-pipeline/pull/14) weakened job acceptance and candidate tests. Candidate scans and the modified gate passed, but the [trusted-base check failed](https://github.com/jayekwere/ci-cd-security-pipeline/actions/runs/41243620076). GitHub reported the PR blocked; it was closed without merging. Requiring `independent-gate` separately prevents a modified custom gate from declaring its own failed independent check acceptable.
+
+The [v1.1.0 release assets](https://github.com/jayekwere/ci-cd-security-pipeline/releases/tag/v1.1.0) include `application.zip`, `sbom.json`, `digests.json`, the application attestation bundle, independent verification output, the negative-test log and a live branch-protection snapshot. The bootstrap implementation merged before mandatory review was enabled; no independent human approval is claimed for that bootstrap. Future merges require an authorized independent reviewer.
+
+For this release, use `e6d3b5cddbd65568ba6960a342e819114da0c61e` as `RELEASE_COMMIT_SHA` in the verification command above. Signed provenance establishes the artifact's build identity; it does not establish that the source is vulnerability-free.
