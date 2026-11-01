@@ -101,3 +101,7 @@ gh attestation verify application.zip --repo jayekwere/ci-cd-security-pipeline \
 ```
 
 The protection rollout requires strict `gate` and `independent-gate` checks from GitHub Actions, one approving review, stale-review dismissal, approval of the latest push, resolved conversations, administrator enforcement, and disabled force pushes/deletions. With only one collaborator, subsequent merges require adding an authorized independent reviewer. Repository administrators retain the ability to edit protection settings; this is an unavoidable administrative trust boundary. Verify live settings through the GitHub API rather than treating this document as evidence of configuration.
+
+---
+
+**AI assistance:** AI tools helped with code or documentation.
