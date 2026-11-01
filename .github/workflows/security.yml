@@ -72,7 +72,7 @@ jobs:
           persist-credentials: false
       - run: python3 scripts/check_secrets.py
       - name: Block verified credentials in history
-        uses: trufflesecurity/trufflehog@ce76ea8f54888c154de94d37f0681493e69193f8
+        uses: trufflesecurity/trufflehog@421026a6540c63cf143ef53a5859389d473e88da
         with:
           extra_args: --only-verified
           version: latest@sha256:0d003fc3abc4e1565eca8462b992001314de51451e96e3c44de80d116794d5d1
